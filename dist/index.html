@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Automated Privacy Policy Risk Scanner</title>
+    <!-- Google Fonts Orbitron & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <script type="module" crossorigin src="/assets/index-BkQ1nguA.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-CHBPJYXd.css">
+  </head>
+  <body>
+    <div class="void-background">
+      <div class="stars"></div>
+      <div class="nebula"></div>
+      <div class="particles" id="particles-container"></div>
+    </div>
+    
+    <div id="app">
+      <header>
+        <div class="shield-container">
+          <svg class="shield-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><path d="M208,40H48A16,16,0,0,0,32,56v58.77c0,89.61,75.82,119.34,91,124.39a15.53,15.53,0,0,0,10,0c15.2-5.05,91-34.78,91-124.39V56A16,16,0,0,0,208,40Zm0,74.77c0,75.34-59.54,101.4-80,108.6-20.46-7.2-80-33.26-80-108.6V56H208Z" fill="currentColor"/></svg>
+          <div class="orbiting-particle"></div>
+        </div>
+        <h1 class="title">Automated Privacy Policy Risk Scanner</h1>
+      </header>
+
+      <main>
+        <div class="input-panel">
+          <textarea placeholder="PASTE PRIVACY POLICY TEXT FOR ANALYSIS..."></textarea>
+          <button class="scan-button" id="scan-btn">
+            <span class="btn-text">INITIATE RISK SCAN</span>
+            <div class="btn-glow"></div>
+          </button>
+        </div>
+
+        <div class="dashboard">
+          <div class="stat-card high-risk levitate-1">
+            <div class="stat-value">12</div>
+            <div class="stat-label">HIGH RISK</div>
+          </div>
+          <div class="stat-card medium-risk levitate-2">
+            <div class="stat-value">5</div>
+            <div class="stat-label">MEDIUM RISK</div>
+          </div>
+          <div class="stat-card low-risk levitate-3">
+            <div class="stat-value">28</div>
+            <div class="stat-label">LOW RISK</div>
+          </div>
+        </div>
+
+        <div class="results-feed" id="results">
+          <!-- Populated dynamically -->
+        </div>
+      </main>
+    </div>
+  </body>
+</html>
