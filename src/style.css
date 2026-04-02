@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #8b5cf6;
+  --color-secondary: #06b6d4;
+  --color-background: #0f172a;
+  --color-surface: rgba(30, 41, 59, 0.5);
+  --color-border: rgba(255, 255, 255, 0.1);
+
+  --font-sans: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-3xl: 24px;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-slate-200 antialiased font-sans selection:bg-primary/30 min-h-screen overflow-x-hidden;
+  }
+}
+
+@layer components {
+  .glass-effect {
+    @apply backdrop-blur-xl bg-surface border border-border;
+  }
+  
+  .neon-glow {
+    @apply shadow-[0_0_20px_rgba(139,92,246,0.2)];
+  }
+
+  /* Custom animations for risk levels */
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+  }
+  
+  .animate-shake {
+    animation: shake 0.2s ease-in-out infinite;
+  }
+}
+
+/* Base styles for scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Glowing backgrounds */
+.bg-gradient {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 50% 0%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+              radial-gradient(circle at 0% 50%, rgba(6, 182, 212, 0.05) 0%, transparent 50%);
+  z-index: -1;
+}
