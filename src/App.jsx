@@ -138,7 +138,11 @@ const App = () => {
             className="mt-8 p-6 glass-effect bg-rose-500/10 border-rose-500/30 rounded-2xl text-center"
           >
             <AlertTriangle className="w-8 h-8 text-rose-500 mx-auto mb-3" />
-            <p className="text-rose-200">Analysis Failed: {error}</p>
+            <p className="text-rose-200">
+              {error.includes('quota') ? 
+                'API Quota Exceeded. Please wait a few minutes or switch to a paid Gemini plan.' : 
+                `Analysis Failed: ${error}`}
+            </p>
             <button 
               onClick={() => setError(null)}
               className="mt-4 text-sm text-slate-400 hover:text-white transition-colors underline"
