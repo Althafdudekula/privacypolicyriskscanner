@@ -15,12 +15,15 @@ import {
 } from 'lucide-react';
 
 const AnalysisResults = ({ results, onReset }) => {
-  const { score, summary, risks, categories } = results;
+  const parsedScore = Number(results.score !== undefined ? results.score : results.overallScore || 0);
+  const categories = results.categories || {};
+  const summary = results.summary || "No summary available.";
+  const risks = results.risks || results.findings || [];
 
   const getScoreColor = (s) => {
-    if (s >= 80) return 'text-success';
-    if (s >= 50) return 'text-warning';
-    return 'text-danger';
+    if (s >= 80) return 'text-emerald-600';
+    if (s >= 50) return 'text-amber-500';
+    return 'text-rose-600';
   };
 
   const getScoreBg = (s) => {
@@ -56,19 +59,19 @@ const AnalysisResults = ({ results, onReset }) => {
     <div className="space-y-12 animate-in fade-in duration-700">
       {/* Top Section: Score & Summary */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className={`lg:col-span-1 p-8 rounded-2xl border flex flex-col items-center justify-center text-center ${getScoreBg(score)}`}>
+        <div className={`lg:col-span-1 p-8 rounded-2xl border flex flex-col items-center justify-center text-center ${getScoreBg(parsedScore)}`}>
           <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4">Risk Safety Score</span>
           <div className="relative flex items-center justify-center">
-            <span className={`text-7xl font-black tracking-tighter ${getScoreColor(score)}`}>{score}</span>
+            <span className={`text-7xl font-black tracking-tighter ${getScoreColor(parsedScore)}`}>{parsedScore}</span>
             <span className="text-xl font-bold text-slate-400 absolute -bottom-1 -right-8">/100</span>
           </div>
           <div className="mt-6">
             <span className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider ${
-              score >= 80 ? 'bg-success text-white' : 
-              score >= 50 ? 'bg-warning text-white' : 
-              'bg-danger text-white'
+              parsedScore >= 80 ? 'bg-emerald-500 text-white' : 
+              parsedScore >= 50 ? 'bg-amber-500 text-white' : 
+              'bg-rose-500 text-white'
             }`}>
-              {score >= 80 ? 'Safe Policy' : score >= 50 ? 'Moderate Risk' : 'High Risk'}
+              {parsedScore >= 80 ? 'Safe Policy' : parsedScore >= 50 ? 'Moderate Risk' : 'High Risk'}
             </span>
           </div>
         </div>
@@ -112,16 +115,16 @@ const AnalysisResults = ({ results, onReset }) => {
                   <div className="p-2 bg-slate-50 rounded-lg">
                     <Icon className="w-4 h-4 text-slate-600" />
                   </div>
-                  <span className={`text-lg font-black ${getScoreColor(val)}`}>{val}%</span>
+                  <span className={`text-lg font-black ${getScoreColor(Number(val))}`}>{Number(val)}%</span>
                 </div>
                 <div className="space-y-2">
                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{categoryLabels[key]}</span>
                   <div className="progress-bar-container">
                     <div 
-                      className={`progress-bar ${
-                        val >= 80 ? 'bg-success' : val >= 50 ? 'bg-warning' : 'bg-danger'
+                      className={`progress-bar flex items-center justify-end pr-2 text-[10px] font-bold text-white ${
+                        Number(val) >= 80 ? 'bg-emerald-500' : Number(val) >= 50 ? 'bg-amber-500' : 'bg-rose-500'
                       }`}
-                      style={{ width: `${val}%` }}
+                      style={{ width: `${Number(val)}%` }}
                     />
                   </div>
                 </div>
