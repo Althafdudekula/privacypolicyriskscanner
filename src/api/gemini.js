@@ -1,30 +1,35 @@
 const GEMINI_MODEL = 'gemini-2.5-flash';
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
-export const SYSTEM_PROMPT = `You are a privacy policy risk analyst. Analyze the following privacy policy text and return a structured JSON assessment.
+export const SYSTEM_PROMPT = `You are a professional privacy policy risk analyst. 
+Analyze the following privacy policy text and return a structured JSON assessment that is clear, professional, and easy to understand for a non-legal audience.
 
-For each distinct risk or finding, create an entry. Return ONLY valid JSON — no markdown, no code fences, no explanation outside JSON.
-
-JSON schema:
+JSON Schema Requirement:
 {
-  "overallScore": <number 0-100, where 0=extremely dangerous, 100=perfectly safe>,
-  "summary": "<one-sentence overall assessment>",
-  "findings": [
+  "score": number (0-100, where 100 is perfectly safe and 0 is extremely risky),
+  "summary": "string (a high-level professional summary of the policy)",
+  "risks": [
     {
-      "level": "high" | "medium" | "low",
-      "category": "<short category name, e.g. 'Data Selling', 'Tracking', 'User Rights', 'Data Retention', 'Third-Party Sharing', 'Data Collection'>",
-      "quote": "<exact or near-exact quote from the policy that triggered this finding>",
-      "explanation": "<clear, plain-English explanation of why this is risky or safe, and what it means for users>",
-      "safer_version": "<a re-phrased, privacy-respecting version of the original quote for comparison>"
+      "text": "string (the specific sentence or clause from the policy)",
+      "level": "Low | Medium | High",
+      "reason": "string (short, clear explanation of the risk)",
+      "rewrite": "string (a safer, more privacy-respecting version of the line)"
     }
-  ]
+  ],
+  "categories": {
+    "data_collection": number (0-100 score for this specific category),
+    "data_sharing": number (0-100 score for this specific category),
+    "data_retention": number (0-100 score for this specific category),
+    "consent": number (0-100 score for this specific category)
+  }
 }
 
 Guidelines:
-- High risk: data selling, indefinite tracking, no opt-out, children's data misuse, no breach notification
-- Always include at least 5 findings for a comprehensive analysis.
-- Quotes should be from the actual policy text.
-- Create a "safer_version" that would make the policy much more privacy-friendly (e.g., opting-out by default instead of opt-in, no third-party selling, etc.).`;
+1. Provide a balanced analysis.
+2. Identify at least 5-8 specific risky statements if present.
+3. The "rewrite" should be practical and professional.
+4. Score categories accurately based on industry standards (GDPR, CCPA).
+5. Ensure the response is ONLY the JSON object.`;
 
 export async function analyzePolicy(policyText, apiKey) {
   if (!apiKey) throw new Error('API Key is missing');
@@ -36,7 +41,7 @@ export async function analyzePolicy(policyText, apiKey) {
       system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
       contents: [{ parts: [{ text: policyText }] }],
       generationConfig: {
-        temperature: 0.2,
+        temperature: 0.1,
         maxOutputTokens: 4096,
         responseMimeType: 'application/json'
       }
@@ -55,3 +60,4 @@ export async function analyzePolicy(policyText, apiKey) {
 
   return JSON.parse(rawText);
 }
+

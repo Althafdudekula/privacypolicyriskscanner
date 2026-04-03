@@ -1,74 +1,75 @@
-import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Brain, AlertTriangle, BarChart3, Loader2, CheckCircle2 } from 'lucide-react';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import React, { useState, useEffect } from 'react';
+import { Loader2, CheckCircle2, Search, LayoutPanelTop, FileText } from 'lucide-react';
 
-function cn(...inputs) {
-  return twMerge(clsx(inputs));
-}
+const steps = [
+  { id: 1, label: 'Scanning policy text', icon: FileText },
+  { id: 2, label: 'Identifying privacy risks', icon: Search },
+  { id: 3, label: 'Calculating risk ratings', icon: LayoutPanelTop },
+  { id: 4, label: 'Generating compliance report', icon: CheckCircle2 }
+];
 
-const LoadingStatus = ({ currentStep }) => {
-  const steps = [
-    { id: 1, label: "Scanning policy structure...", icon: Search, color: "text-blue-400" },
-    { id: 2, label: "Understanding context & clauses...", icon: Brain, color: "text-purple-400" },
-    { id: 3, label: "Detecting hidden risks...", icon: AlertTriangle, color: "text-rose-400" },
-    { id: 4, label: "Finalizing risk score...", icon: BarChart3, color: "text-emerald-400" }
-  ];
+const LoadingStatus = () => {
+  const [currentStep, setCurrentStep] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentStep((prev) => (prev < steps.length ? prev + 1 : prev));
+    }, 1200);
+    return () => clearInterval(timer);
+  }, []);
 
   return (
-    <div className="max-w-md mx-auto space-y-4">
-      {steps.map((step) => {
-        const isActive = currentStep === step.id;
-        const isCompleted = currentStep > step.id;
-        
-        return (
-          <motion.div
-            key={step.id}
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ 
-              opacity: isActive || isCompleted ? 1 : 0.4, 
-              x: 0,
-              scale: isActive ? 1.05 : 1
-            }}
-            className={cn(
-              "flex items-center gap-4 p-4 rounded-2xl transition-all duration-500",
-              isActive && "glass-effect bg-white/5 border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.05)]",
-              !isActive && !isCompleted && "grayscale opacity-40"
-            )}
-          >
-            <div className={cn(
-              "p-2.5 rounded-xl bg-slate-900/50 border border-border/50",
-              isActive && "neon-glow ring-1 ring-white/20"
-            )}>
-              {isCompleted ? (
-                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-              ) : isActive ? (
-                <Loader2 className="w-5 h-5 animate-spin text-primary" />
-              ) : (
-                <step.icon className={cn("w-5 h-5", step.color)} />
-              )}
+    <div className="max-w-md mx-auto py-12 px-6 card-professional">
+      <div className="flex flex-col gap-8">
+        {steps.map((step, index) => {
+          const isCompleted = index < currentStep;
+          const isCurrent = index === currentStep;
+
+          return (
+            <div 
+              key={step.id} 
+              className={`flex items-center gap-4 transition-all duration-500 ${isCompleted || isCurrent ? 'opacity-100' : 'opacity-30'}`}
+            >
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-colors ${
+                isCompleted ? 'bg-primary border-primary text-white' : 
+                isCurrent ? 'border-primary text-primary bg-blue-50' : 
+                'border-slate-200'
+              }`}>
+                {isCompleted ? (
+                  <CheckCircle2 className="w-5 h-5 animate-in zoom-in duration-300" />
+                ) : isCurrent ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <step.icon className="w-5 h-5" />
+                )}
+              </div>
+              <div className="flex flex-col">
+                <span className={`text-sm font-bold tracking-tight ${isCurrent ? 'text-primary' : 'text-slate-900'}`}>
+                  {step.label}
+                </span>
+                {isCurrent && (
+                  <span className="text-[10px] uppercase font-black text-primary/60 tracking-widest animate-pulse">
+                    Processing...
+                  </span>
+                )}
+              </div>
             </div>
-            
-            <div className="flex-1">
-              <span className={cn(
-                "text-sm font-semibold tracking-wide",
-                isActive ? "text-white" : "text-slate-500"
-              )}>
-                {step.label}
-              </span>
-              {isActive && (
-                <motion.div
-                  initial={{ scaleX: 0 }}
-                  animate={{ scaleX: 1 }}
-                  transition={{ duration: 0.8, repeat: Infinity }}
-                  className="h-0.5 w-full bg-gradient-to-r from-primary to-transparent mt-2 origin-left"
-                />
-              )}
-            </div>
-          </motion.div>
-        );
-      })}
+          );
+        })}
+      </div>
+      
+      <div className="mt-12 pt-8 border-t border-slate-100">
+        <div className="flex items-center justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest">
+           <span>Institutional Privacy Scrutiny</span>
+           <span>v4.0.1</span>
+        </div>
+        <div className="mt-3 progress-bar-container">
+          <div 
+            className="progress-bar bg-primary" 
+            style={{ width: `${Math.min((currentStep / steps.length) * 100, 100)}%` }}
+          />
+        </div>
+      </div>
     </div>
   );
 };
