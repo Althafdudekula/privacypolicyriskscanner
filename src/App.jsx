@@ -44,8 +44,6 @@ const App = () => {
           </div>
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
             <a href="#" className="hover:text-primary transition-colors">Home</a>
-            <a href="#" className="hover:text-primary transition-colors">About Scanning</a>
-            <a href="#" className="hover:text-primary transition-colors">Compliance Guide</a>
           </nav>
         </div>
       </header>
