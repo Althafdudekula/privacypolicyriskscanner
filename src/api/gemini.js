@@ -41,7 +41,7 @@ export async function analyzePolicy(policyText, apiKey) {
       system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
       contents: [{ parts: [{ text: policyText }] }],
       generationConfig: {
-        temperature: 0.1,
+        temperature: 0,
         maxOutputTokens: 4096,
         responseMimeType: 'application/json'
       }
