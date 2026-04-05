@@ -1,5 +1,7 @@
-const GEMINI_MODEL = 'gemini-2.5-flash';
+const GEMINI_MODEL = 'gemini-2.0-flash';
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+
+const MAX_RETRIES = 3;
 
 export const SYSTEM_PROMPT = `You are a professional privacy policy risk analyst. 
 Analyze the following privacy policy text and return a structured JSON assessment that is clear, professional, and easy to understand for a non-legal audience.
@@ -31,33 +33,50 @@ Guidelines:
 4. Score categories accurately based on industry standards (GDPR, CCPA).
 5. Ensure the response is ONLY the JSON object.`;
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 export async function analyzePolicy(policyText, apiKey) {
   if (!apiKey) throw new Error('API Key is missing');
 
-  const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-      contents: [{ parts: [{ text: policyText }] }],
-      generationConfig: {
-        temperature: 0,
-        maxOutputTokens: 4096,
-        responseMimeType: 'application/json'
-      }
-    })
+  const requestBody = JSON.stringify({
+    system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+    contents: [{ parts: [{ text: policyText }] }],
+    generationConfig: {
+      temperature: 0,
+      maxOutputTokens: 4096,
+      responseMimeType: 'application/json'
+    }
   });
 
-  if (!response.ok) {
-    const errData = await response.json();
-    throw new Error(errData.error?.message || 'API request failed');
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: requestBody
+    });
+
+    if (response.status === 429) {
+      if (attempt < MAX_RETRIES) {
+        const waitTime = Math.pow(2, attempt + 1) * 15 * 1000; // 30s, 60s, 120s
+        console.warn(`Rate limited. Retrying in ${waitTime / 1000}s... (attempt ${attempt + 1}/${MAX_RETRIES})`);
+        await sleep(waitTime);
+        continue;
+      }
+      throw new Error('Rate limit exceeded. Please wait a minute and try again.');
+    }
+
+    if (!response.ok) {
+      const errData = await response.json();
+      throw new Error(errData.error?.message || 'API request failed');
+    }
+
+    const data = await response.json();
+    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!rawText) throw new Error('Empty response from Gemini');
+
+    return JSON.parse(rawText);
   }
-
-  const data = await response.json();
-  const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-  if (!rawText) throw new Error('Empty response from Gemini');
-
-  return JSON.parse(rawText);
 }
-
