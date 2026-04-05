@@ -87,11 +87,14 @@ const AnalysisResults = ({ results, onReset }) => {
           <div className="mt-8 flex items-center gap-4">
              <button 
               onClick={onReset}
-              className="px-4 py-2 bg-slate-900 text-white text-xs font-bold rounded-lg flex items-center gap-2 hover:bg-slate-800 transition-colors uppercase tracking-widest"
+              className="px-4 py-2 bg-slate-900 text-white text-xs font-bold rounded-lg flex items-center gap-2 hover:bg-slate-800 transition-colors uppercase tracking-widest print:hidden"
              >
                <RefreshCcw className="w-3.5 h-3.5" /> Start New Scan
              </button>
-             <button className="px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-lg flex items-center gap-2 hover:bg-slate-50 transition-colors uppercase tracking-widest">
+             <button 
+               onClick={() => window.print()}
+               className="px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-lg flex items-center gap-2 hover:bg-slate-50 transition-colors uppercase tracking-widest print:hidden"
+             >
                Download PDF Report
              </button>
           </div>
