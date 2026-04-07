@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Shield, AlertCircle, CheckCircle, Info, Lock } from 'lucide-react';
 import { analyzePolicy } from './api/gemini';
 import InputSection from './components/InputSection';
@@ -11,22 +11,33 @@ const App = () => {
   const [results, setResults] = useState(null);
   const [error, setError] = useState(null);
   const [apiKey] = useState(import.meta.env.VITE_GEMINI_API_KEY || '');
+  const abortControllerRef = useRef(null);
 
   const handleAnalyze = async () => {
     if (!policyText.trim()) return;
-    
+
+    // Create a fresh AbortController for this analysis
+    abortControllerRef.current = new AbortController();
     setIsAnalyzing(true);
     setResults(null);
     setError(null);
 
     try {
-      const response = await analyzePolicy(policyText, apiKey);
+      const response = await analyzePolicy(policyText, apiKey, abortControllerRef.current.signal);
       setResults(response);
       setIsAnalyzing(false);
     } catch (err) {
-      setError(err.message);
       setIsAnalyzing(false);
+      if (err.message !== 'Analysis cancelled.') {
+        setError(err.message);
+      }
     }
+  };
+
+  const handleCancel = () => {
+    abortControllerRef.current?.abort();
+    setIsAnalyzing(false);
+    setError(null);
   };
 
   return (
@@ -96,7 +107,7 @@ const App = () => {
 
         {isAnalyzing && (
           <div className="py-12">
-            <LoadingStatus />
+            <LoadingStatus onCancel={handleCancel} />
           </div>
         )}
 

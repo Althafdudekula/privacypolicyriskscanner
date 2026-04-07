@@ -1,15 +1,17 @@
 const GEMINI_MODEL = 'gemini-2.0-flash';
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
-const MAX_RETRIES = 3;
+const MAX_RETRIES = 2;
+const REQUEST_TIMEOUT_MS = 60000; // 60 seconds max per attempt
 
 export const SYSTEM_PROMPT = `You are a professional privacy policy risk analyst. 
-Analyze the following privacy policy text and return a structured JSON assessment that is clear, professional, and easy to understand for a non-legal audience.
+Analyze the following text and return a structured JSON assessment that is clear, professional, and easy to understand for a non-legal audience.
+If the text is not a privacy policy, still analyze any data/privacy related statements you find and note in the summary that the input may not be a standard privacy policy.
 
 JSON Schema Requirement:
 {
   "score": number (0-100, where 100 is perfectly safe and 0 is extremely risky),
-  "summary": "string (a high-level professional summary of the policy)",
+  "summary": "string (a high-level professional summary of the policy or text)",
   "risks": [
     {
       "text": "string (the specific sentence or clause from the policy)",
@@ -28,7 +30,7 @@ JSON Schema Requirement:
 
 Guidelines:
 1. Provide a balanced analysis.
-2. Identify at least 5-8 specific risky statements if present.
+2. Identify at least 3-8 specific risky statements if present.
 3. The "rewrite" should be practical and professional.
 4. Score categories accurately based on industry standards (GDPR, CCPA).
 5. Ensure the response is ONLY the JSON object.`;
@@ -37,7 +39,7 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-export async function analyzePolicy(policyText, apiKey) {
+export async function analyzePolicy(policyText, apiKey, signal) {
   if (!apiKey) throw new Error('API Key is missing');
 
   const requestBody = JSON.stringify({
@@ -51,32 +53,65 @@ export async function analyzePolicy(policyText, apiKey) {
   });
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: requestBody
-    });
+    // Check if user cancelled
+    if (signal?.aborted) throw new Error('Analysis cancelled.');
+
+    // Per-request timeout using AbortController
+    const timeoutController = new AbortController();
+    const timeoutId = setTimeout(() => timeoutController.abort(), REQUEST_TIMEOUT_MS);
+
+    // Merge user cancel signal + timeout signal
+    const combinedSignal = signal
+      ? anyAborted([signal, timeoutController.signal])
+      : timeoutController.signal;
+
+    let response;
+    try {
+      response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: requestBody,
+        signal: combinedSignal
+      });
+    } catch (err) {
+      clearTimeout(timeoutId);
+      if (signal?.aborted) throw new Error('Analysis cancelled.');
+      if (err.name === 'AbortError') throw new Error('Request timed out after 60 seconds. Please try again.');
+      throw err;
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (response.status === 429) {
       if (attempt < MAX_RETRIES) {
-        const waitTime = Math.pow(2, attempt + 1) * 15 * 1000; // 30s, 60s, 120s
+        const waitTime = (attempt + 1) * 15 * 1000; // 15s, 30s
         console.warn(`Rate limited. Retrying in ${waitTime / 1000}s... (attempt ${attempt + 1}/${MAX_RETRIES})`);
         await sleep(waitTime);
         continue;
       }
-      throw new Error('Rate limit exceeded. Please wait a minute and try again.');
+      throw new Error('Rate limit exceeded. Please wait a moment and try again.');
     }
 
     if (!response.ok) {
-      const errData = await response.json();
-      throw new Error(errData.error?.message || 'API request failed');
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData.error?.message || `API error: ${response.status}`);
     }
 
     const data = await response.json();
     const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
-    if (!rawText) throw new Error('Empty response from Gemini');
+    if (!rawText) throw new Error('Empty response from Gemini. Please try again.');
 
     return JSON.parse(rawText);
   }
+}
+
+// Helper: returns a signal that aborts when ANY of the given signals abort
+function anyAborted(signals) {
+  const controller = new AbortController();
+  for (const sig of signals) {
+    if (sig.aborted) { controller.abort(); break; }
+    sig.addEventListener('abort', () => controller.abort(), { once: true });
+  }
+  return controller.signal;
 }

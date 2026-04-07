@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Loader2, CheckCircle2, Search, LayoutPanelTop, FileText } from 'lucide-react';
+import { Loader2, CheckCircle2, Search, LayoutPanelTop, FileText, XCircle } from 'lucide-react';
 
 const steps = [
   { id: 1, label: 'Scanning policy text', icon: FileText },
@@ -8,7 +8,7 @@ const steps = [
   { id: 4, label: 'Generating compliance report', icon: CheckCircle2 }
 ];
 
-const LoadingStatus = () => {
+const LoadingStatus = ({ onCancel }) => {
   const [currentStep, setCurrentStep] = useState(0);
 
   useEffect(() => {
@@ -58,17 +58,28 @@ const LoadingStatus = () => {
         })}
       </div>
       
-      <div className="mt-12 pt-8 border-t border-slate-100">
+      <div className="mt-12 pt-8 border-t border-slate-100 space-y-4">
         <div className="flex items-center justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest">
            <span>Institutional Privacy Scrutiny</span>
            <span>v4.0.1</span>
         </div>
-        <div className="mt-3 progress-bar-container">
+        <div className="progress-bar-container">
           <div 
             className="progress-bar bg-primary" 
             style={{ width: `${Math.min((currentStep / steps.length) * 100, 100)}%` }}
           />
         </div>
+        {onCancel && (
+          <div className="flex justify-center pt-2">
+            <button
+              onClick={onCancel}
+              className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-500 border border-slate-200 rounded-lg hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition-all uppercase tracking-widest"
+            >
+              <XCircle className="w-4 h-4" />
+              Cancel Analysis
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
