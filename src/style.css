@@ -36,16 +36,16 @@
     @apply w-full p-6 bg-white border border-border rounded-2xl focus:ring-4 focus:ring-primary/5 focus:border-primary outline-none transition-all resize-none shadow-sm;
   }
 
-  /* Subtle background pattern for institutional feel */
+  /* Shield icon watermark background pattern for institutional feel */
   .bg-institutional {
     position: fixed;
     inset: 0;
     z-index: -1;
     background-color: #f8fafc;
-    background-image: 
-      radial-gradient(#e2e8f0 0.8px, transparent 0.8px);
-    background-size: 24px 24px;
-    opacity: 0.4;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='1' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/%3E%3C/svg%3E");
+    background-size: 80px 80px;
+    background-repeat: repeat;
+    opacity: 0.06;
   }
 
   .progress-bar-container {
