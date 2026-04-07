@@ -1,9 +1,16 @@
 import React from 'react';
-import { Search } from 'lucide-react';
+import { Search, AlertTriangle, CheckCircle } from 'lucide-react';
+
+const MAX_CHARS = 12000;
 
 const InputSection = ({ policyText, setPolicyText, onAnalyze, isDisabled }) => {
+  const charCount = policyText.length;
+  const isOverLimit = charCount > MAX_CHARS;
+  const isNearLimit = charCount > MAX_CHARS * 0.85 && !isOverLimit;
+  const percentage = Math.min((charCount / MAX_CHARS) * 100, 100);
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="relative group">
         <textarea
           className="input-field min-h-[400px] text-slate-700 leading-relaxed font-medium placeholder:text-slate-400"
@@ -16,6 +23,41 @@ const InputSection = ({ policyText, setPolicyText, onAnalyze, isDisabled }) => {
         </div>
       </div>
 
+      {/* Character counter bar */}
+      {charCount > 0 && (
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between text-xs font-semibold">
+            <span className={isOverLimit ? 'text-amber-600' : isNearLimit ? 'text-amber-500' : 'text-slate-400'}>
+              {charCount.toLocaleString()} / {MAX_CHARS.toLocaleString()} characters
+            </span>
+            {isOverLimit ? (
+              <span className="flex items-center gap-1 text-amber-600">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                Text will be auto-trimmed to fit
+              </span>
+            ) : isNearLimit ? (
+              <span className="flex items-center gap-1 text-amber-500">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                Approaching limit
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-emerald-500">
+                <CheckCircle className="w-3.5 h-3.5" />
+                Good length
+              </span>
+            )}
+          </div>
+          <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-300 ${
+                isOverLimit ? 'bg-amber-400' : isNearLimit ? 'bg-amber-400' : 'bg-emerald-400'
+              }`}
+              style={{ width: `${percentage}%` }}
+            />
+          </div>
+        </div>
+      )}
+
       <div className="flex justify-center">
         <button
           onClick={onAnalyze}
@@ -27,7 +69,7 @@ const InputSection = ({ policyText, setPolicyText, onAnalyze, isDisabled }) => {
           <Search className="w-4 h-4 opacity-70" />
         </button>
       </div>
-      
+
       <div className="flex flex-wrap items-center justify-center gap-6 text-xs font-bold text-slate-400 uppercase tracking-widest pt-2">
         <div className="flex items-center gap-2">
           <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />

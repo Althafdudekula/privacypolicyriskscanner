@@ -2,6 +2,7 @@ const GEMINI_MODEL = 'gemini-2.0-flash';
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 const MAX_RETRIES = 2;
+const MAX_CHARS = 12000; // ~3,000 tokens — safe for free tier
 const REQUEST_TIMEOUT_MS = 60000; // 60 seconds max per attempt
 
 export const SYSTEM_PROMPT = `You are a professional privacy policy risk analyst. 
@@ -42,9 +43,14 @@ function sleep(ms) {
 export async function analyzePolicy(policyText, apiKey, signal) {
   if (!apiKey) throw new Error('API Key is missing');
 
+  // Truncate to stay within free-tier token limits
+  const trimmedText = policyText.length > MAX_CHARS
+    ? policyText.slice(0, MAX_CHARS) + '\n\n[Text truncated to fit analysis limit]'
+    : policyText;
+
   const requestBody = JSON.stringify({
     system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-    contents: [{ parts: [{ text: policyText }] }],
+    contents: [{ parts: [{ text: trimmedText }] }],
     generationConfig: {
       temperature: 0,
       maxOutputTokens: 4096,
@@ -89,7 +95,7 @@ export async function analyzePolicy(policyText, apiKey, signal) {
         await sleep(waitTime);
         continue;
       }
-      throw new Error('Rate limit exceeded. Please wait a moment and try again.');
+      throw new Error('API rate limit reached. Your text may be too long or you have too many requests. Please shorten your text or wait 1 minute and try again.');
     }
 
     if (!response.ok) {
