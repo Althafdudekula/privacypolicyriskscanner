@@ -47,9 +47,9 @@ function ScoreRing({ score }) {
   }, [score, circumference]);
 
   const color =
-    score >= 70 ? '#10b981' : score >= 40 ? '#f59e0b' : '#ef4444';
+    score >= 80 ? '#10b981' : score >= 50 ? '#f59e0b' : '#ef4444';
   const label =
-    score >= 70 ? 'Low Risk' : score >= 40 ? 'Medium Risk' : 'High Risk';
+    score >= 80 ? 'Low Risk' : score >= 50 ? 'Medium Risk' : score >= 20 ? 'High Risk' : 'Critical Risk';
 
   return (
     <div className="flex flex-col items-center justify-center gap-2">
@@ -117,7 +117,7 @@ const CATEGORY_META = {
 function CategoryCard({ categoryKey, value }) {
   const meta = CATEGORY_META[categoryKey] || { label: categoryKey, Icon: Info };
   const { label, Icon } = meta;
-  const color = value >= 70 ? '#10b981' : value >= 40 ? '#f59e0b' : '#ef4444';
+  const color = value >= 80 ? '#10b981' : value >= 50 ? '#f59e0b' : '#ef4444';
 
   return (
     <div className="card-professional p-5 flex flex-col gap-3">

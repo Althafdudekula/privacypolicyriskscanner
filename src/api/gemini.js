@@ -2,34 +2,35 @@ const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODEL = 'llama-3.3-70b-versatile';
 const MAX_CHARS = 12000;
 
-export const SYSTEM_PROMPT = `You are a professional privacy policy risk analyst. Analyze the provided privacy policy text and return ONLY a valid JSON object with no markdown, no code fences, and no extra text.
+export const SYSTEM_PROMPT = `You are a professional privacy policy risk analyst. Analyze the provided privacy policy text and return ONLY a valid JSON object.
 
 The JSON must follow this exact schema:
 {
   "score": <integer 0-100, where 100 = perfectly safe, 0 = extremely risky>,
-  "summary": "<2-3 sentence plain English professional summary of the policy's overall privacy posture>",
+  "summary": "<2-3 sentence professional summary>",
   "risks": [
     {
-      "text": "<exact quoted clause or paraphrased finding from the policy>",
-      "level": "<one of: High | Medium | Low>",
-      "reason": "<plain English explanation of why this is risky>",
-      "rewrite": "<a safer rewritten version of this clause>"
+      "text": "<quoted clause>",
+      "level": "<High | Medium | Low>",
+      "reason": "<explanation>",
+      "rewrite": "<safer version>"
     }
   ],
   "categories": {
-    "data_collection": <integer 0-100, safety score for data collection practices>,
-    "data_sharing": <integer 0-100, safety score for data sharing practices>,
-    "data_retention": <integer 0-100, safety score for data retention policies>,
-    "user_control": <integer 0-100, safety score for user rights and controls>
+    "data_collection": <integer 0-100>,
+    "data_sharing": <integer 0-100>,
+    "data_retention": <integer 0-100>,
+    "user_control": <integer 0-100>
   }
 }
 
-Rules:
-- score must be a plain integer (e.g. 72), NOT a string
-- All category values must be plain integers 0-100
-- Identify between 3 and 8 specific risks
-- level must be exactly "High", "Medium", or "Low"
-- Return ONLY the JSON object, nothing else`;
+Scoring Rules (CRITICAL):
+- 100 is ONLY for policies that collect zero PII and share nothing.
+- If data is shared with third-party advertisers, "data_sharing" MUST be below 40.
+- If data is SOLD to third parties, "data_sharing" MUST be below 15 and the overall "score" MUST be below 30.
+- If there is no "Right to be Forgotten" or account deletion mentioned, "user_control" MUST be below 40.
+- If any "High" level risk is identified, the overall "score" MUST NOT exceed 50.
+- All scores must be plain integers. Return ONLY JSON.`;
 
 export async function analyzePolicy(policyText, apiKey, signal) {
   if (!apiKey) throw new Error('API Key is missing. Please set VITE_GROQ_API_KEY in your .env file.');
