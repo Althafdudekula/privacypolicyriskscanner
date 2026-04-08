@@ -1,12 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Shield, 
   AlertTriangle, 
   CheckCircle, 
   Info, 
-  ArrowRight, 
   RefreshCcw, 
-  Search,
   Database,
   Share2,
   Clock,
@@ -15,10 +13,32 @@ import {
 } from 'lucide-react';
 
 const AnalysisResults = ({ results, onReset }) => {
-  const parsedScore = Number(results.score !== undefined ? results.score : results.overallScore || 0);
+  const parsedScore = Math.round(Number(
+    results?.score ?? results?.overallScore ?? 0
+  ));
   const categories = results.categories || {};
   const summary = results.summary || "No summary available.";
   const risks = results.risks || results.findings || [];
+
+  // Animated score counter: counts from 0 → parsedScore over ~1.2s
+  const [displayScore, setDisplayScore] = useState(0);
+  useEffect(() => {
+    if (parsedScore === 0) { setDisplayScore(0); return; }
+    const duration = 1200;
+    const steps = 60;
+    const increment = parsedScore / steps;
+    let current = 0;
+    const timer = setInterval(() => {
+      current += increment;
+      if (current >= parsedScore) {
+        setDisplayScore(parsedScore);
+        clearInterval(timer);
+      } else {
+        setDisplayScore(Math.round(current));
+      }
+    }, duration / steps);
+    return () => clearInterval(timer);
+  }, [parsedScore]);
 
   const getScoreColor = (s) => {
     if (s >= 80) return 'text-emerald-600';
@@ -62,7 +82,7 @@ const AnalysisResults = ({ results, onReset }) => {
         <div className={`lg:col-span-1 p-8 rounded-2xl border flex flex-col items-center justify-center text-center ${getScoreBg(parsedScore)}`}>
           <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4">Risk Safety Score</span>
           <div className="relative flex items-center justify-center">
-            <span className={`text-7xl font-black tracking-tighter ${getScoreColor(parsedScore)}`}>{parsedScore}</span>
+            <span className={`text-7xl font-black tracking-tighter tabular-nums ${getScoreColor(parsedScore)}`}>{displayScore}</span>
             <span className="text-xl font-bold text-slate-400 absolute -bottom-1 -right-8">/100</span>
           </div>
           <div className="mt-6">
