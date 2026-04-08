@@ -49,7 +49,7 @@ export async function analyzePolicy(policyText, apiKey, signal) {
     : policyText;
 
   const requestBody = JSON.stringify({
-    system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+    systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
     contents: [{ parts: [{ text: trimmedText }] }],
     generationConfig: {
       temperature: 0,
@@ -57,6 +57,9 @@ export async function analyzePolicy(policyText, apiKey, signal) {
       responseMimeType: 'application/json'
     }
   });
+
+  // Yield so React renders the loading state before the first network call
+  await sleep(50);
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     // Check if user cancelled
@@ -112,7 +115,14 @@ export async function analyzePolicy(policyText, apiKey, signal) {
 
     if (!rawText) throw new Error('Empty response from Gemini. Please try again.');
 
-    return JSON.parse(rawText);
+    // Strip markdown code fences if API wraps JSON in them
+    let cleanText = rawText.trim();
+    if (cleanText.startsWith('```json')) cleanText = cleanText.slice(7);
+    else if (cleanText.startsWith('```')) cleanText = cleanText.slice(3);
+    if (cleanText.endsWith('```')) cleanText = cleanText.slice(0, -3);
+    cleanText = cleanText.trim();
+
+    return JSON.parse(cleanText);
   }
 }
 
