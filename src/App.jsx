@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Shield, AlertCircle, CheckCircle, Info, Lock } from 'lucide-react';
-import { analyzePolicy } from './api/gemini';
+import { analyzePolicy } from './api/groq';
 import InputSection from './components/InputSection';
 import LoadingStatus from './components/LoadingStatus';
 import AnalysisResults from './components/AnalysisResults';
@@ -10,7 +10,7 @@ const App = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState(null);
   const [error, setError] = useState(null);
-  const [apiKey] = useState(import.meta.env.VITE_GEMINI_API_KEY || '');
+  const [apiKey] = useState(import.meta.env.VITE_GROQ_API_KEY || '');
   const abortControllerRef = useRef(null);
 
   const handleAnalyze = async () => {
@@ -82,7 +82,7 @@ const App = () => {
               <div className="max-w-md mx-auto p-4 bg-amber-50 border border-amber-100 rounded-xl flex gap-3 items-center">
                 <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
                 <p className="text-sm text-amber-700 font-medium">
-                  <strong>API Key Required:</strong> Please configure <code>VITE_GEMINI_API_KEY</code> in your .env file to enable analysis.
+                  <strong>API Key Required:</strong> Please configure <code>VITE_GROQ_API_KEY</code> in your .env file to enable analysis.
                 </p>
               </div>
             )}
