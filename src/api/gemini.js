@@ -1,40 +1,36 @@
-const GEMINI_MODEL = 'gemini-2.0-flash';
+const GEMINI_MODEL = 'gemini-1.5-flash';
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
-const MAX_RETRIES = 3;
+const MAX_RETRIES = 2;
 const MAX_CHARS = 12000; // ~3,000 tokens — safe for free tier
 const REQUEST_TIMEOUT_MS = 60000; // 60 seconds max per attempt
 
-export const SYSTEM_PROMPT = `You are a professional privacy policy risk analyst. 
-Analyze the following text and return a structured JSON assessment that is clear, professional, and easy to understand for a non-legal audience.
-If the text is not a privacy policy, still analyze any data/privacy related statements you find and note in the summary that the input may not be a standard privacy policy.
+export const SYSTEM_PROMPT = `You are a privacy policy risk analyst. Analyze the text and return ONLY a raw JSON object (no markdown, no code blocks, no extra text).
 
-JSON Schema Requirement:
+Return this exact JSON structure:
 {
-  "score": number (0-100, where 100 is perfectly safe and 0 is extremely risky),
-  "summary": "string (a high-level professional summary of the policy or text)",
+  "score": <number 0-100, where 100 = perfectly safe, 0 = extremely risky>,
+  "summary": "<2-3 sentence professional summary>",
   "risks": [
     {
-      "text": "string (the specific sentence or clause from the policy)",
-      "level": "Low | Medium | High",
-      "reason": "string (short, clear explanation of the risk)",
-      "rewrite": "string (a safer, more privacy-respecting version of the line)"
+      "text": "<exact quote from the policy>",
+      "level": "<High|Medium|Low>",
+      "reason": "<why this is risky>",
+      "rewrite": "<safer version of this clause>"
     }
   ],
   "categories": {
-    "data_collection": number (0-100 score for this specific category),
-    "data_sharing": number (0-100 score for this specific category),
-    "data_retention": number (0-100 score for this specific category),
-    "consent": number (0-100 score for this specific category)
+    "data_collection": <number 0-100>,
+    "data_sharing": <number 0-100>,
+    "data_retention": <number 0-100>,
+    "consent": <number 0-100>
   }
 }
 
-Guidelines:
-1. Provide a balanced analysis.
-2. Identify at least 3-8 specific risky statements if present.
-3. The "rewrite" should be practical and professional.
-4. Score categories accurately based on industry standards (GDPR, CCPA).
-5. Ensure the response is ONLY the JSON object.`;
+Rules:
+- Return ONLY the JSON object. No markdown. No \`\`\`. No explanation.
+- Identify 3-6 specific risky clauses.
+- Score accurately based on GDPR/CCPA standards.`;
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
