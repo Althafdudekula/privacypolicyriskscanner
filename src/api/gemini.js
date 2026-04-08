@@ -1,7 +1,7 @@
 const GEMINI_MODEL = 'gemini-2.0-flash';
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
-const MAX_RETRIES = 2;
+const MAX_RETRIES = 3;
 const MAX_CHARS = 12000; // ~3,000 tokens — safe for free tier
 const REQUEST_TIMEOUT_MS = 60000; // 60 seconds max per attempt
 
@@ -90,12 +90,16 @@ export async function analyzePolicy(policyText, apiKey, signal) {
 
     if (response.status === 429) {
       if (attempt < MAX_RETRIES) {
-        const waitTime = (attempt + 1) * 15 * 1000; // 15s, 30s
-        console.warn(`Rate limited. Retrying in ${waitTime / 1000}s... (attempt ${attempt + 1}/${MAX_RETRIES})`);
+        // Exponential backoff with a bit of jitter: 20s, 40s, 60s
+        const baseDelay = 20000;
+        const jitter = Math.random() * 5000;
+        const waitTime = (attempt + 1) * baseDelay + jitter;
+        
+        console.warn(`Rate limited (429). Retrying in ${Math.round(waitTime / 1000)}s... (attempt ${attempt + 1}/${MAX_RETRIES})`);
         await sleep(waitTime);
         continue;
       }
-      throw new Error('API rate limit reached. Your text may be too long or you have too many requests. Please shorten your text or wait 1 minute and try again.');
+      throw new Error('API rate limit reached. The Google Gemini free tier has strict quotas. Please wait a minute and try again with a shorter text.');
     }
 
     if (!response.ok) {
