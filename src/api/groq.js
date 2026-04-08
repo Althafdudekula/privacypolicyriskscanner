@@ -1,9 +1,10 @@
-import Groq from 'groq-sdk';
-
+// Direct REST call to Groq's OpenAI-compatible API — no SDK needed in browser
+const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODEL = 'llama-3.3-70b-versatile';
 
 const MAX_RETRIES = 2;
-const MAX_CHARS = 12000; // ~3,000 tokens — safe for free tier
+const MAX_CHARS = 12000;
+const REQUEST_TIMEOUT_MS = 60000;
 
 export const SYSTEM_PROMPT = `You are a privacy policy risk analyst. Analyze the text and return ONLY a raw JSON object (no markdown, no code blocks, no extra text).
 
@@ -36,67 +37,96 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+// Returns a signal that aborts when ANY of the given signals abort
+function anyAborted(signals) {
+  const controller = new AbortController();
+  for (const sig of signals) {
+    if (sig.aborted) { controller.abort(); break; }
+    sig.addEventListener('abort', () => controller.abort(), { once: true });
+  }
+  return controller.signal;
+}
+
 export async function analyzePolicy(policyText, apiKey, signal) {
   if (!apiKey) throw new Error('API Key is missing');
 
-  const client = new Groq({ apiKey, dangerouslyAllowBrowser: true });
-
-  // Truncate to stay within token limits
   const trimmedText = policyText.length > MAX_CHARS
     ? policyText.slice(0, MAX_CHARS) + '\n\n[Text truncated to fit analysis limit]'
     : policyText;
+
+  const requestBody = JSON.stringify({
+    model: GROQ_MODEL,
+    temperature: 0,
+    max_tokens: 4096,
+    response_format: { type: 'json_object' },
+    messages: [
+      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'user', content: trimmedText }
+    ]
+  });
 
   // Yield so React renders the loading state before the first network call
   await sleep(50);
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    // Check if user cancelled
     if (signal?.aborted) throw new Error('Analysis cancelled.');
 
-    let completion;
-    try {
-      completion = await client.chat.completions.create(
-        {
-          model: GROQ_MODEL,
-          temperature: 0,
-          max_tokens: 4096,
-          response_format: { type: 'json_object' },
-          messages: [
-            { role: 'system', content: SYSTEM_PROMPT },
-            { role: 'user', content: trimmedText }
-          ]
-        },
-        { signal }
-      );
-    } catch (err) {
-      if (signal?.aborted || err.name === 'AbortError') throw new Error('Analysis cancelled.');
+    const timeoutController = new AbortController();
+    const timeoutId = setTimeout(() => timeoutController.abort(), REQUEST_TIMEOUT_MS);
+    const combinedSignal = signal
+      ? anyAborted([signal, timeoutController.signal])
+      : timeoutController.signal;
 
-      // Groq rate-limit errors surface as status 429
-      const status = err?.status ?? err?.response?.status;
-      if (status === 429 && attempt < MAX_RETRIES) {
+    let response;
+    try {
+      response = await fetch(GROQ_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: requestBody,
+        signal: combinedSignal
+      });
+    } catch (err) {
+      clearTimeout(timeoutId);
+      if (signal?.aborted) throw new Error('Analysis cancelled.');
+      if (err.name === 'AbortError') throw new Error('Request timed out after 60 seconds. Please try again.');
+      throw err;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+
+    if (response.status === 429) {
+      if (attempt < MAX_RETRIES) {
         const waitTime = (attempt + 1) * 20000 + Math.random() * 5000;
         console.warn(`Rate limited (429). Retrying in ${Math.round(waitTime / 1000)}s...`);
         await sleep(waitTime);
         continue;
       }
-
-      if (status === 429) {
-        throw new Error('API rate limit reached. Please wait a moment and try again with a shorter text.');
-      }
-
-      throw err;
+      throw new Error('API rate limit reached. Please wait a moment and try again.');
     }
 
-    const rawText = completion.choices?.[0]?.message?.content;
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData.error?.message || `Groq API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('[Groq raw response]', data); // debug log
+
+    const rawText = data.choices?.[0]?.message?.content;
     if (!rawText) throw new Error('Empty response from Groq. Please try again.');
 
-    // Strip accidental markdown fences just in case
+    // Strip accidental markdown fences
     let cleanText = rawText.trim();
     if (cleanText.startsWith('```json')) cleanText = cleanText.slice(7);
     else if (cleanText.startsWith('```')) cleanText = cleanText.slice(3);
     if (cleanText.endsWith('```')) cleanText = cleanText.slice(0, -3);
     cleanText = cleanText.trim();
 
-    return JSON.parse(cleanText);
+    const parsed = JSON.parse(cleanText);
+    console.log('[Groq parsed result]', parsed); // debug log
+    return parsed;
   }
 }
